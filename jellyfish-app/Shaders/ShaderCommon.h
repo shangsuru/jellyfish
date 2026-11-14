@@ -233,6 +233,25 @@ inline float3 subumbrellaApex(float t, constant FrameUniforms& f, constant Anato
     return bellSurface(0.0f, 0.0f, t, f, a) - float3(0.0f, a.bell2.y, 0.0f);
 }
 
+// MARK: - Numeric safety
+//
+// Shaders build with fast math, where pow(x, y) = exp2(y·log2(x)): a base
+// even slightly below zero yields NaN. A single NaN pixel is then smeared by
+// the bloom blur into a flickering square, so bases are always clamped.
+
+/// View-dependent rim term with a guaranteed non-negative base.
+inline float fresnelTerm(float3 N, float3 V, float power) {
+    return pow(saturate(1.0f - abs(dot(N, V))), power);
+}
+
+/// Replaces NaN/Inf with black and clamps extreme highlights. Uses a bit
+/// test because fast math is allowed to optimise `isnan` away.
+inline float3 sanitizeHDR(float3 c) {
+    uint3 bits = as_type<uint3>(c);
+    bool3 bad = (bits & 0x7f800000u) == 0x7f800000u;
+    return clamp(select(c, float3(0.0f), bad), 0.0f, 32.0f);
+}
+
 // MARK: - Shading
 
 struct TissueLight {

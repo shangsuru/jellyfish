@@ -64,7 +64,7 @@ fragment float4 bellFragment(BellOut in [[stage_in]],
 
     float3 N = normalize(in.normal);
     float3 V = normalize(f.cameraPos.xyz - in.worldPos);
-    float fres = pow(1.0f - abs(dot(N, V)), m.params.x);
+    float fres = fresnelTerm(N, V, m.params.x);
 
     // Sector coordinates: one unit per lappet. Integer values sit on the
     // rhopalia (marginal notches); half-integers on the lappet centres.
@@ -187,7 +187,7 @@ fragment float4 gonadFragment(TissueOut in [[stage_in]],
                               constant MaterialUniforms& m [[buffer(1)]]) {
     float3 N = normalize(in.normal);
     float3 V = normalize(f.cameraPos.xyz - in.worldPos);
-    float fres = pow(1.0f - abs(dot(N, V)), m.params.x);
+    float fres = fresnelTerm(N, V, m.params.x);
 
     // Folds of germinal tissue and speckles of developing gametes.
     float folds = 0.5f + 0.5f * sin(in.uv.x * 95.0f + in.uv.y * 2.0f + in.aux.y);
@@ -237,7 +237,7 @@ fragment float4 manubriumFragment(TissueOut in [[stage_in]],
                                   constant MaterialUniforms& m [[buffer(1)]]) {
     float3 N = normalize(in.normal);
     float3 V = normalize(f.cameraPos.xyz - in.worldPos);
-    float fres = pow(1.0f - abs(dot(N, V)), m.params.x);
+    float fres = fresnelTerm(N, V, m.params.x);
     // Irregular folds of the mouth tube rather than regular stripes.
     float folds = valueNoise3(float3(cos(in.uv.y), sin(in.uv.y), in.uv.x * 3.0f) * 4.0f);
     // Blend smoothly into the subumbrella above and the oral arms below.
@@ -353,7 +353,7 @@ fragment float4 oralArmFragment(TissueOut in [[stage_in]],
     float s = in.uv.x, w = in.uv.y;
     float3 N = normalize(in.normal);
     float3 V = normalize(f.cameraPos.xyz - in.worldPos);
-    float fres = pow(1.0f - abs(dot(N, V)), m.params.x);
+    float fres = fresnelTerm(N, V, m.params.x);
 
     float edgeMask = smoothstep(0.55f, 1.0f, abs(w));
     float canal = 1.0f - smoothstep(0.0f, 0.22f, abs(w));
@@ -442,7 +442,7 @@ vertex TentacleOut tentacleVertex(uint vid [[vertex_id]],
     float sl = length(sideDir);
     sideDir = sl > 1e-6f ? sideDir / sl : float3(1, 0, 0);
 
-    float bead = pow(0.5f + 0.5f * sin(s * len * a.tentacle.y + seed * 40.0f), 6.0f);
+    float bead = pow(saturate(0.5f + 0.5f * sin(s * len * a.tentacle.y + seed * 40.0f)), 6.0f);
     float r = radius * mix(1.0f, a.tentacle.x, pow(s, 0.7f)) * (1.0f + a.tentacle.z * bead);
     float pixel = dist * f.viewport.z;
     float halfWidth = max(r, pixel * 0.7f);

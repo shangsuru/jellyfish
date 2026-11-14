@@ -17,10 +17,11 @@ vertex FullscreenOut fullscreenVertex(uint vid [[vertex_id]]) {
 fragment float4 bloomPrefilter(FullscreenOut in [[stage_in]],
                                texture2d<float> src [[texture(0)]]) {
     float2 texel = 1.0f / float2(src.get_width(), src.get_height());
-    float3 c = src.sample(linearClamp, in.uv + texel * float2(-1.0f, -1.0f)).rgb
-             + src.sample(linearClamp, in.uv + texel * float2( 1.0f, -1.0f)).rgb
-             + src.sample(linearClamp, in.uv + texel * float2(-1.0f,  1.0f)).rgb
-             + src.sample(linearClamp, in.uv + texel * float2( 1.0f,  1.0f)).rgb;
+    // Sanitise every tap: one invalid pixel would otherwise bloom into a square.
+    float3 c = sanitizeHDR(src.sample(linearClamp, in.uv + texel * float2(-1.0f, -1.0f)).rgb)
+             + sanitizeHDR(src.sample(linearClamp, in.uv + texel * float2( 1.0f, -1.0f)).rgb)
+             + sanitizeHDR(src.sample(linearClamp, in.uv + texel * float2(-1.0f,  1.0f)).rgb)
+             + sanitizeHDR(src.sample(linearClamp, in.uv + texel * float2( 1.0f,  1.0f)).rgb);
     c *= 0.25f;
     float l = dot(c, float3(0.2126f, 0.7152f, 0.0722f));
     return float4(c * smoothstep(0.08f, 0.6f, l), 1.0f);
@@ -45,7 +46,7 @@ fragment float4 compositeFragment(FullscreenOut in [[stage_in]],
                                   texture2d<float> scene [[texture(0)]],
                                   texture2d<float> bloom [[texture(1)]],
                                   constant float4& params [[buffer(0)]]) {
-    float3 hdr = scene.sample(linearClamp, in.uv).rgb + bloom.sample(linearClamp, in.uv).rgb * params.x;
+    float3 hdr = sanitizeHDR(scene.sample(linearClamp, in.uv).rgb) + sanitizeHDR(bloom.sample(linearClamp, in.uv).rgb) * params.x;
     hdr *= params.y;
 
     // Filmic ACES approximation (Narkowicz).
