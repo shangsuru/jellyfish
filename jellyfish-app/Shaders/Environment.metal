@@ -1,44 +1,44 @@
 //
 //  Environment.metal
-//  The water column around the specimen: a direction-based underwater
-//  backdrop (depth gradient, Snell's window, light shafts) and softly
-//  drifting suspended particles that give the scene depth.
+//  標本を取り巻く水柱: 方向に基づく水中の背景
+//  （深度グラデーション、スネルの窓、光の筋）と、
+//  シーンに奥行きを与えるゆっくり漂う浮遊粒子。
 //
 
 #include "ShaderCommon.h"
 
-// MARK: - Water backdrop
+// MARK: - 水中の背景
 
-/// Colour of the open water seen along world-space direction `d`.
-/// Because it depends on direction rather than screen position, looking
-/// up from beneath the jellyfish reveals the brighter surface above.
+/// ワールド空間の方向 `d` に見える外洋の水の色。
+/// 画面上の位置ではなく方向に依存するため、
+/// クラゲの下から見上げると、上方の明るい水面が見える。
 inline float3 waterColor(float3 d, float t, constant FrameUniforms& f) {
     float up = d.y;
 
-    // Depth gradient: near-black abyss below, deep blue at eye level, lighter toward the surface.
+    // 深度グラデーション: 下はほぼ黒い深海、目線の高さは深い青、水面に向かって明るくなる。
     float3 deep = float3(0.0012f, 0.0035f, 0.010f);
     float3 mid  = float3(0.0040f, 0.0170f, 0.038f);
     float3 high = float3(0.0200f, 0.0750f, 0.120f);
     float3 col = mix(deep, mid, smoothstep(-0.7f, 0.2f, up));
     col = mix(col, high, pow(smoothstep(0.1f, 1.0f, up), 1.5f));
 
-    // Large, slow variations in turbidity.
+    // 濁りの大きくゆっくりした変化。
     float murk = fbm3(d * 2.2f + float3(0.0f, t * 0.01f, 0.0f));
     col *= 0.8f + 0.45f * murk;
 
-    // Snell's window: the glow of the surface light from above.
+    // スネルの窓: 上方から差す水面の光の輝き。
     float sd = saturate(dot(d, f.keyLightDir.xyz));
     col += float3(0.04f, 0.12f, 0.17f) * pow(sd, 10.0f) * 0.8f;
     col += float3(0.25f, 0.40f, 0.45f) * pow(sd, 140.0f) * 0.35f;
 
-    // Caustic shimmer within the window.
+    // 窓の中のコースティクスのきらめき。
     if (up > 0.3f) {
         float2 sp = d.xz / max(up, 0.2f) * 2.5f;
         float c = fbm2(sp + float2(t * 0.05f, -t * 0.04f));
         col += float3(0.02f, 0.06f, 0.08f) * pow(c, 3.0f) * smoothstep(0.5f, 0.95f, up) * 2.0f;
     }
 
-    // Light shafts radiating down from the surface.
+    // 水面から放射状に差し込む光の筋。
     float2 az = normalize(d.xz + float2(1e-5f, 0.0f));
     float r1 = fbm2(az * 3.5f + float2(t * 0.015f, -t * 0.011f));
     float r2 = fbm2(az * 7.0f + float2(-t * 0.02f, t * 0.017f) + 5.3f);
@@ -61,7 +61,7 @@ fragment float4 backgroundFragment(FullscreenOut in [[stage_in]],
     return float4(waterColor(dir, f.cameraPos.w, f), 1.0f);
 }
 
-// MARK: - Suspended particles ("marine snow")
+// MARK: - 浮遊粒子（「マリンスノー」）
 
 struct ParticleOut {
     float4 position [[position]];
@@ -69,7 +69,7 @@ struct ParticleOut {
     float intensity;
 };
 
-/// `field`: xyz = centre of the particle volume, w = edge length.
+/// `field`: xyz = 粒子領域の中心、w = 一辺の長さ。
 vertex ParticleOut particleVertex(uint vid [[vertex_id]],
                                   const device PartVertex* verts [[buffer(0)]],
                                   constant FrameUniforms& f [[buffer(1)]],
@@ -82,8 +82,8 @@ vertex ParticleOut particleVertex(uint vid [[vertex_id]],
     float brightness = v.p1.w;
     float t = f.cameraPos.w;
 
-    // Slow drift with a little meander; positions wrap inside a box
-    // that follows the camera, so the water always feels populated.
+    // 少し蛇行しながらゆっくり漂う。位置はカメラに追従する箱の中で
+    // 折り返すため、水中には常に粒子が満ちて見える。
     float3 drift = float3(0.012f, 0.028f, -0.009f) * (0.5f + seed);
     float3 p = base + drift * t + 0.05f * float3(sin(t * 0.3f + seed * 30.0f), 0.0f, cos(t * 0.25f + seed * 17.0f));
     float3 rel = fract((p - field.xyz) / field.w + 0.5f) - 0.5f;
@@ -94,7 +94,7 @@ vertex ParticleOut particleVertex(uint vid [[vertex_id]],
     float dist = distance(world, f.cameraPos.xyz);
     fade *= smoothstep(0.4f, 1.4f, dist);
 
-    // Out-of-focus particles grow into faint bokeh discs.
+    // ピントの外れた粒子は淡いボケの円盤になる。
     float blur = abs(dist - f.viewport.w) * 0.010f;
     float pixel = dist * f.viewport.z;
     float sizeWorld = max(size + blur, pixel * 1.5f);
@@ -115,5 +115,5 @@ fragment float4 particleFragment(ParticleOut in [[stage_in]]) {
     float r2 = dot(in.corner, in.corner);
     float disc = exp(-r2 * 4.0f) * (1.0f - smoothstep(0.8f, 1.0f, r2));
     float3 color = float3(0.5f, 0.68f, 0.8f) * in.intensity * disc;
-    return float4(color, 0.0f);   // purely additive
+    return float4(color, 0.0f);   // 純粋な加算合成
 }

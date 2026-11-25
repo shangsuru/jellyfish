@@ -1,18 +1,18 @@
 import simd
 
-/// Swimming rhythm and water motion. The actual deformation is evaluated
-/// on the GPU (see `pulseAt`, `bellSurface`, `tentacleCenter`); this type
-/// owns the clock and the tunable parameters.
+/// 遊泳リズムと水の動き。実際の変形は GPU 上で評価され
+/// （`pulseAt`、`bellSurface`、`tentacleCenter` を参照）、この型は
+/// 時間と調整可能なパラメータを管理する。
 struct SwimAnimation {
-    /// Seconds per bell pulse.
+    /// 傘の拍動1回あたりの秒数。
     var pulsePeriod: Float = 3.8
-    /// Scales how strongly the bell contracts (0 = still).
+    /// 傘の収縮の強さの倍率（0 = 静止）。
     var contraction: Float = 1.0
-    /// Scales the free sway of arms and tentacles.
+    /// 口腕と触手の自由な揺れの倍率。
     var sway: Float = 1.0
-    /// Delay (seconds per body unit) for motion to travel down arms and tentacles.
+    /// 動きが口腕と触手を伝わって下がるまでの遅延（体長単位あたりの秒数）。
     var trailingLag: Float = 0.32
-    /// Strength of the slowly turning water current.
+    /// ゆっくり向きを変える水流の強さ。
     var currentStrength: Float = 0.22
 
     private(set) var time: Float = 0
@@ -21,7 +21,7 @@ struct SwimAnimation {
         time += dt
     }
 
-    /// A gentle current whose direction and strength wander over minutes.
+    /// 数分かけて向きと強さが移ろう穏やかな水流。
     var current: SIMD3<Float> {
         let angle = time * 0.045
         let strength = currentStrength * (0.7 + 0.3 * sin(time * 0.11))

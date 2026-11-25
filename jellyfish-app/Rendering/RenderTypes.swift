@@ -1,22 +1,22 @@
 import simd
 
-// GPU-facing data layouts. These must match the structs in
-// Shaders/ShaderCommon.h exactly; every field is a float4 or float4x4
-// so Swift and Metal agree on alignment without padding surprises.
+// GPU 向けのデータレイアウト。Shaders/ShaderCommon.h の構造体と
+// 完全に一致させる必要がある。すべてのフィールドを float4 か float4x4 にし、
+// Swift と Metal でアライメントが予期せぬパディングなく一致するようにしている。
 
 struct FrameUniforms {
     var viewProj: simd_float4x4
     var view: simd_float4x4
     var invViewProj: simd_float4x4
-    var cameraPos: SIMD4<Float>       // xyz position, w time
-    var viewport: SIMD4<Float>        // width, height, pixel angle, focus distance
+    var cameraPos: SIMD4<Float>       // xyz 位置、w 時刻
+    var viewport: SIMD4<Float>        // 幅、高さ、ピクセル角、焦点距離
     var keyLightDir: SIMD4<Float>
     var keyLightColor: SIMD4<Float>
     var fillLightDir: SIMD4<Float>
     var fillLightColor: SIMD4<Float>
     var ambientTop: SIMD4<Float>
     var ambientBottom: SIMD4<Float>
-    var anim: SIMD4<Float>            // period, contraction, sway, lag
+    var anim: SIMD4<Float>            // 周期、収縮量、揺れ、遅延
     var current: SIMD4<Float>
 }
 
@@ -34,22 +34,22 @@ struct MaterialUniforms {
     var rimColor: SIMD4<Float>
     var detailColor: SIMD4<Float>
     var accentColor: SIMD4<Float>
-    var params: SIMD4<Float>          // fresnel power, scatter, specular, transmission
+    var params: SIMD4<Float>          // フレネル指数、散乱、鏡面反射、透過
 }
 
-/// Generic parametric vertex; each anatomical part's vertex shader
-/// interprets the two components differently (see JellyfishMeshBuilder).
+/// 汎用のパラメトリック頂点。各部位の頂点シェーダが
+/// 2つの成分をそれぞれ異なる意味で解釈する（JellyfishMeshBuilder を参照）。
 struct PartVertex {
     var p0: SIMD4<Float>
     var p1: SIMD4<Float> = .zero
 }
 
-/// CPU-side mesh before upload.
+/// アップロード前の CPU 側メッシュ。
 struct MeshData {
     var vertices: [PartVertex] = []
     var indices: [UInt32] = []
 
-    /// Appends a (rows+1)×(cols+1) vertex grid's triangle indices.
+    /// (rows+1)×(cols+1) の頂点グリッドの三角形インデックスを追加する。
     mutating func appendGrid(rows: Int, cols: Int, baseVertex: Int) {
         let stride = cols + 1
         for i in 0..<rows {

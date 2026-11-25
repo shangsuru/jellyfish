@@ -1,24 +1,24 @@
 import Foundation
 import simd
 
-/// Free-orbit trackball camera around the specimen.
+/// 標本の周囲を自由に周回するトラックボールカメラ。
 ///
-/// Orientation is a quaternion, so the camera can travel over the top
-/// and underneath without gimbal lock. Gestures feed rotation, zoom and
-/// roll; `update(dt:)` applies inertia, smoothing and the reset animation.
+/// 向きはクォータニオンで保持するため、ジンバルロックなしで
+/// 真上や真下へも回り込める。ジェスチャーが回転・ズーム・ロールを入力し、
+/// `update(dt:)` が慣性・スムージング・リセットアニメーションを適用する。
 final class OrbitCamera {
     let fieldOfView: Float = 38 * .pi / 180
     let nearPlane: Float = 0.02
     let farPlane: Float = 120
 
-    // Default exhibit view: slightly above, looking gently down at the bell.
+    // デフォルトの展示視点: やや上から傘を緩やかに見下ろす。
     let defaultOrientation = simd_quatf(angle: -0.2, axis: [1, 0, 0])
     let defaultDistance: Float = 9.5
     let maxDistance: Float = 16
-    /// Closest approach from the side; larger above and below (see `minimumDistance`).
+    /// 側面からの最接近距離。上下からはより大きくなる（`minimumDistance` を参照）。
     let closestDistance: Float = 2.2
 
-    /// Orbit pivot height when zoomed out (whole animal) and zoomed in (bell & arms).
+    /// ズームアウト時（全身）とズームイン時（傘と口腕）の回転中心の高さ。
     private let farPivotY: Float = -1.7
     private let nearPivotY: Float = -0.45
 
@@ -29,7 +29,7 @@ final class OrbitCamera {
     private var angularVelocity: SIMD2<Float> = .zero
     private var reset: ResetAnimation?
 
-    /// Radians of rotation per point of finger travel.
+    /// 指の移動1ポイントあたりの回転量（ラジアン）。
     private let rotationSensitivity: Float = 0.008
 
     private struct ResetAnimation {
@@ -45,16 +45,16 @@ final class OrbitCamera {
         targetDistance = defaultDistance
     }
 
-    // MARK: Gestures
+    // MARK: ジェスチャー
 
-    /// Trackball rotation from a finger drag (in points).
+    /// 指のドラッグ（ポイント単位）によるトラックボール回転。
     func rotate(byPoints delta: SIMD2<Float>) {
         reset = nil
         angularVelocity = .zero
         applyRotation(delta * rotationSensitivity)
     }
 
-    /// Continue spinning after the finger lifts, decaying naturally.
+    /// 指を離した後も回転を続け、自然に減衰させる。
     func fling(velocity: SIMD2<Float>) {
         guard simd_length(velocity) > 60 else { return }
         angularVelocity = velocity * rotationSensitivity * 0.6
@@ -70,25 +70,25 @@ final class OrbitCamera {
         targetDistance = min(max(zoomStartDistance / scale, minimumDistance), maxDistance)
     }
 
-    /// Roll around the viewing axis from a two-finger twist.
+    /// 2本指のひねりで視線軸まわりにロールする。
     func roll(by angle: Float) {
         reset = nil
         orientation = simd_normalize(orientation * simd_quatf(angle: angle, axis: [0, 0, 1]))
     }
 
-    /// Smoothly returns to the default exhibit view.
+    /// デフォルトの展示視点へ滑らかに戻る。
     func resetView() {
         angularVelocity = .zero
         reset = ResetAnimation(fromOrientation: orientation, fromDistance: distance)
     }
 
-    // MARK: Per-frame update
+    // MARK: フレームごとの更新
 
     func update(dt: Float) {
         if var anim = reset {
             anim.progress = min(anim.progress + dt / anim.duration, 1)
             let t = anim.progress
-            let eased = t * t * t * (t * (t * 6 - 15) + 10)   // smootherstep
+            let eased = t * t * t * (t * (t * 6 - 15) + 10)   // スムーザーステップ
             orientation = simd_slerp(anim.fromOrientation, defaultOrientation, eased)
             distance = anim.fromDistance + (defaultDistance - anim.fromDistance) * eased
             targetDistance = distance
@@ -103,12 +103,12 @@ final class OrbitCamera {
             angularVelocity = .zero
         }
 
-        // Keep a comfortable distance when orbiting above or below the animal.
+        // クラゲの上下を周回するときは快適な距離を保つ。
         targetDistance = max(targetDistance, minimumDistance)
         distance += (targetDistance - distance) * (1 - exp(-12 * dt))
     }
 
-    // MARK: Derived values
+    // MARK: 派生値
 
     var target: SIMD3<Float> {
         let t = smoothstep(closestDistance, defaultDistance, distance)
@@ -128,8 +128,8 @@ final class OrbitCamera {
         .perspective(fovY: fieldOfView, aspect: aspect, near: nearPlane, far: farPlane)
     }
 
-    /// Minimum orbit distance for the current direction: from directly
-    /// above or below, the bell and trailing arms extend toward the camera.
+    /// 現在の方向での最小周回距離: 真上や真下からは
+    /// 傘や垂れ下がる口腕がカメラ側へ伸びてくるため。
     private var minimumDistance: Float {
         let dir = orientation.act([0, 0, 1])
         let below = max(0, -dir.y), above = max(0, dir.y)
@@ -137,8 +137,8 @@ final class OrbitCamera {
     }
 
     private func applyRotation(_ angles: SIMD2<Float>) {
-        // Rotations are applied in the camera's local frame, which makes the
-        // drag behave like a free trackball in every orientation.
+        // 回転はカメラのローカル座標系で適用するため、
+        // どの向きでもドラッグが自由なトラックボールのように振る舞う。
         let yaw = simd_quatf(angle: -angles.x, axis: [0, 1, 0])
         let pitch = simd_quatf(angle: -angles.y, axis: [1, 0, 0])
         orientation = simd_normalize(orientation * yaw * pitch)

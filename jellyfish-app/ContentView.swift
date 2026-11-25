@@ -1,11 +1,11 @@
 import SwiftUI
 
-/// The exhibit: a single jellyfish suspended in dark water.
+/// 展示: 暗い水中に漂う一匹のクラゲ。
 ///
-/// - Drag: rotate freely in any direction (with inertia)
-/// - Pinch: zoom
-/// - Two-finger twist: roll
-/// - Double-tap or the reset button: return to the default view
+/// - ドラッグ: あらゆる方向に自由に回転（慣性付き）
+/// - ピンチ: ズーム
+/// - 2本指でひねる: ロール
+/// - ダブルタップまたはリセットボタン: デフォルトの視点に戻る
 struct ContentView: View {
     @State private var camera = OrbitCamera()
     @State private var lastDrag: CGSize = .zero
@@ -47,7 +47,7 @@ struct ContentView: View {
         .padding(20)
     }
 
-    // MARK: Gestures
+    // MARK: ジェスチャー
 
     private var rotateGesture: some Gesture {
         DragGesture(minimumDistance: 1)
@@ -55,7 +55,7 @@ struct ContentView: View {
                 let dx = value.translation.width - lastDrag.width
                 let dy = value.translation.height - lastDrag.height
                 lastDrag = value.translation
-                // Ignore jumps when fingers are added or lifted mid-gesture.
+                // ジェスチャー中に指が増減したときの急なジャンプは無視する。
                 guard abs(dx) < 80, abs(dy) < 80 else { return }
                 camera.rotate(byPoints: SIMD2(Float(dx), Float(dy)))
                 showsReset = true
@@ -97,7 +97,7 @@ struct ContentView: View {
 }
 
 private extension View {
-    /// Immersive presentation: no status bar or home indicator competing with the specimen.
+    /// 没入型の表示: ステータスバーやホームインジケータで標本の邪魔をしない。
     func hidesSystemChrome() -> some View {
         #if os(iOS)
         return self

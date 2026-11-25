@@ -2,19 +2,19 @@ import MetalKit
 import QuartzCore
 import simd
 
-/// Real-time Metal renderer for the jellyfish exhibit.
+/// クラゲ展示用のリアルタイム Metal レンダラ。
 ///
-/// Frame structure:
-///  1. Scene pass (HDR, rgba16Float): water backdrop → suspended particles →
-///     translucent anatomy, blended with premultiplied alpha.
-///  2. Bloom: bright-pass downsample to ¼ resolution, two separable blur iterations.
-///  3. Composite into the drawable: bloom, filmic tone mapping, vignette, dither.
+/// フレームの構成:
+///  1. シーンパス（HDR、rgba16Float）: 水中の背景 → 浮遊粒子 →
+///     半透明の解剖構造を、乗算済みアルファで合成する。
+///  2. ブルーム: 明部を抽出して¼解像度に縮小し、分離可能なぼかしを2回かける。
+///  3. ドローアブルへの合成: ブルーム、フィルム調トーンマッピング、ビネット、ディザ。
 final class JellyfishRenderer: NSObject, MTKViewDelegate {
     private let device: MTLDevice
     private let queue: MTLCommandQueue
     private let camera: OrbitCamera
 
-    /// Note: mesh resolutions and counts are baked at init; proportions update live.
+    /// 注意: メッシュの解像度と数は初期化時に確定する。プロポーションはリアルタイムに反映される。
     var anatomy: JellyfishAnatomy
     var materials = JellyfishMaterials()
     var lighting = LightingRig()
@@ -147,7 +147,7 @@ final class JellyfishRenderer: NSObject, MTKViewDelegate {
     // MARK: MTKViewDelegate
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        sceneTexture = nil   // recreated lazily at the new size
+        sceneTexture = nil   // 新しいサイズで必要になったときに再作成する
     }
 
     func draw(in view: MTKView) {
@@ -188,13 +188,13 @@ final class JellyfishRenderer: NSObject, MTKViewDelegate {
         commandBuffer.commit()
     }
 
-    // MARK: Passes
+    // MARK: パス
 
     private func encodeScene(_ commandBuffer: MTLCommandBuffer, target: MTLTexture,
                              frame: inout FrameUniforms, anatomy: inout AnatomyUniforms) {
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].texture = target
-        pass.colorAttachments[0].loadAction = .dontCare   // the backdrop covers every pixel
+        pass.colorAttachments[0].loadAction = .dontCare   // 背景がすべてのピクセルを覆う
         pass.colorAttachments[0].storeAction = .store
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: pass) else { return }
         encoder.label = "Scene"
@@ -207,11 +207,11 @@ final class JellyfishRenderer: NSObject, MTKViewDelegate {
         encoder.setFragmentBytes(&frame, length: frameSize, index: 0)
         encoder.setFragmentBytes(&anatomy, length: anatomySize, index: 2)
 
-        // Water backdrop
+        // 水中の背景
         encoder.setRenderPipelineState(pipelines.background)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
 
-        // Suspended particles, in a volume that follows the camera
+        // カメラに追従する領域内の浮遊粒子
         var field = SIMD4<Float>(camera.position, Self.particleFieldExtent)
         encoder.setRenderPipelineState(pipelines.particles)
         encoder.setVertexBuffer(meshes.particles.vertexBuffer, offset: 0, index: 0)
@@ -219,8 +219,8 @@ final class JellyfishRenderer: NSObject, MTKViewDelegate {
         drawIndexed(meshes.particles, encoder: encoder)
         encoder.setVertexBytes(&anatomy, length: anatomySize, index: 2)
 
-        // Translucent anatomy, roughly back-to-front. Opacities are low, so a
-        // coarse order based on whether we look from below or above suffices.
+        // 半透明の解剖構造をおおよそ奥から手前へ描く。不透明度が低いため、
+        // 下から見ているか上から見ているかに基づく大まかな順序で十分。
         let bellLayers = { self.draw(self.meshes.bell, self.pipelines.bell, self.materials.bell, instances: 2, encoder) }
         let hanging = {
             self.draw(self.meshes.tentacles, self.pipelines.tentacles, self.materials.tentacles, encoder)
@@ -287,7 +287,7 @@ final class JellyfishRenderer: NSObject, MTKViewDelegate {
                                       instanceCount: instances)
     }
 
-    // MARK: Helpers
+    // MARK: ヘルパー
 
     private func makeFrameUniforms(width: Int, height: Int) -> FrameUniforms {
         let aspect = Float(width) / Float(height)

@@ -7,8 +7,8 @@ typealias PlatformViewRepresentable = NSViewRepresentable
 typealias PlatformViewRepresentable = UIViewRepresentable
 #endif
 
-/// Hosts the Metal-rendered jellyfish inside SwiftUI. Touch handling lives
-/// in SwiftUI (see `ContentView`); this view only draws.
+/// Metal で描画したクラゲを SwiftUI 内に表示する。タッチ処理は
+/// SwiftUI 側（`ContentView` を参照）にあり、このビューは描画のみを行う。
 struct JellyfishMetalView: PlatformViewRepresentable {
     let camera: OrbitCamera
 
@@ -24,7 +24,7 @@ struct JellyfishMetalView: PlatformViewRepresentable {
     #else
     func makeUIView(context: Context) -> MTKView {
         let view = makeView(context: context)
-        view.isUserInteractionEnabled = false   // let SwiftUI gestures receive touches
+        view.isUserInteractionEnabled = false   // タッチを SwiftUI のジェスチャーに渡す
         return view
     }
     func updateUIView(_ view: MTKView, context: Context) {}

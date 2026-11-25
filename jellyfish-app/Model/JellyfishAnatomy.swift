@@ -1,37 +1,37 @@
 import simd
 
-/// Anatomical proportions of the specimen — a scyphozoan medusa with a
-/// scalloped bell, four horseshoe gonads, a four-lobed manubrium, four
-/// frilled oral arms and two rings of marginal tentacles.
+/// 標本の解剖学的なプロポーション。波形の傘、4つの馬蹄形の生殖腺、
+/// 4葉の口柄、ひだのある4本の口腕、2列の縁触手を持つ
+/// 鉢虫綱のクラゲ。
 ///
-/// Dimensions are in body units (bell radius ≈ 1). Values that shape the
-/// geometry on the GPU are packed into `AnatomyUniforms`; counts and
-/// resolutions drive `JellyfishMeshBuilder`.
+/// 寸法は体長単位（傘の半径 ≈ 1）。GPU 上で形状を決める値は
+/// `AnatomyUniforms` にまとめられ、数と解像度は
+/// `JellyfishMeshBuilder` が使う。
 struct JellyfishAnatomy {
-    // Bell (umbrella)
+    // 傘
     var bellRadius: Float = 1.0
     var bellHeight: Float = 0.78
-    /// Arc swept by the bell profile; slightly over 90° curls the margin inward.
+    /// 傘の断面が描く弧の角度。90°をわずかに超えると傘縁が内側に巻き込む。
     var bellSweep: Float = 1.74
-    var lappetCount = 16              // must be even
+    var lappetCount = 16              // 偶数であること
     var lappetDepth: Float = 0.045
     var apexThickness: Float = 0.17
     var marginThickness: Float = 0.012
     var bellRadialSegments = 80
     var bellAngularSegments = 256
 
-    // Gonads (interradial horseshoes beneath the subumbrella)
+    // 生殖腺（下傘面の下にある間輻位の馬蹄形）
     var gonadCount = 4
-    var gonadRingRadius: Float = 0.30   // in bell profile units
+    var gonadRingRadius: Float = 0.30   // 傘の断面座標の単位
     var gonadArcRadius: Float = 0.13
     var gonadTubeRadius: Float = 0.035
     var gonadFrill: Float = 0.35
 
-    // Manubrium (central stalk carrying the mouth)
+    // 口柄（口を持つ中央の柄）
     var manubriumLength: Float = 0.30
     var manubriumRadius: Float = 0.085
 
-    // Oral arms
+    // 口腕
     var oralArmCount = 4
     var oralArmLength: Float = 2.7
     var oralArmWidth: Float = 0.22
@@ -40,7 +40,7 @@ struct JellyfishAnatomy {
     var oralArmLengthSegments = 260
     var oralArmWidthSegments = 28
 
-    // Marginal tentacles
+    // 縁触手
     var longTentacleCount = 24
     var longTentacleLength: ClosedRange<Float> = 3.0...5.2
     var longTentacleRadius: Float = 0.0065

@@ -1,18 +1,18 @@
 import simd
 
-/// Builds the parametric meshes for each anatomical part.
+/// 各解剖学的部位のパラメトリックメッシュを構築する。
 ///
-/// Vertices only hold parametric coordinates; the vertex shaders in
-/// Jellyfish.metal turn them into animated positions each frame.
+/// 頂点はパラメトリック座標のみを保持し、
+/// Jellyfish.metal の頂点シェーダが毎フレームそれをアニメーションする位置へ変換する。
 enum JellyfishMeshBuilder {
 
-    /// Bell grid. p0 = (u, θ). Drawn with two instances (outer + inner surface).
+    /// 傘のグリッド。p0 = (u, θ)。2インスタンス（外面と内面）で描画する。
     static func bell(_ a: JellyfishAnatomy) -> MeshData {
         var mesh = MeshData()
         let nu = a.bellRadialSegments, nt = a.bellAngularSegments
         for i in 0...nu {
             let x = Float(i) / Float(nu)
-            // Slightly denser rings toward the delicate margin.
+            // 繊細な傘縁に向かってリングをやや密にする。
             let u = 1 - pow(1 - x, 1.25)
             for j in 0...nt {
                 let theta = Float(j) / Float(nt) * 2 * .pi
@@ -23,7 +23,7 @@ enum JellyfishMeshBuilder {
         return mesh
     }
 
-    /// Gonads. p0 = (gonad index, s along horseshoe, cross-section angle).
+    /// 生殖腺。p0 = (生殖腺インデックス, 馬蹄形に沿った s, 断面角度)。
     static func gonads(_ a: JellyfishAnatomy) -> MeshData {
         var mesh = MeshData()
         let ns = 120, na = 16
@@ -41,7 +41,7 @@ enum JellyfishMeshBuilder {
         return mesh
     }
 
-    /// Manubrium tube. p0 = (s along stalk, angle).
+    /// 口柄の筒。p0 = (柄に沿った s, 角度)。
     static func manubrium(_ a: JellyfishAnatomy) -> MeshData {
         var mesh = MeshData()
         let ns = 24, na = 48
@@ -56,7 +56,7 @@ enum JellyfishMeshBuilder {
         return mesh
     }
 
-    /// Oral arm sheets. p0 = (arm index, s along arm, w across), p1.x = seed.
+    /// 口腕のシート。p0 = (口腕インデックス, 口腕に沿った s, 横方向の w)、p1.x = シード。
     static func oralArms(_ a: JellyfishAnatomy, rng: inout SeededRandom) -> MeshData {
         var mesh = MeshData()
         let ns = a.oralArmLengthSegments, nw = a.oralArmWidthSegments
@@ -76,7 +76,7 @@ enum JellyfishMeshBuilder {
         return mesh
     }
 
-    /// Tentacle ribbons. p0 = (index, s, side ±1), p1 = (root θ, length, radius, seed).
+    /// 触手のリボン。p0 = (インデックス, s, 側 ±1)、p1 = (付け根の θ, 長さ, 半径, シード)。
     static func tentacles(_ a: JellyfishAnatomy, rng: inout SeededRandom) -> MeshData {
         var mesh = MeshData()
         var index = 0
@@ -95,7 +95,7 @@ enum JellyfishMeshBuilder {
             index += 1
         }
 
-        // Long tentacles emerge from beneath the lappets, evenly spaced with slight irregularity.
+        // 長い触手は縁弁の下から、わずかな不規則さを持たせて等間隔に生える。
         for i in 0..<a.longTentacleCount {
             let step = 2 * Float.pi / Float(a.longTentacleCount)
             let theta = (Float(i) + 0.5 + rng.next(in: -0.2...0.2)) * step
@@ -104,7 +104,7 @@ enum JellyfishMeshBuilder {
                         radius: a.longTentacleRadius * rng.next(in: 0.8...1.2),
                         segments: a.longTentacleSegments)
         }
-        // A dense fringe of short tentacles lines the whole margin.
+        // 短い触手の密な縁取りが傘縁全体に並ぶ。
         for i in 0..<a.fringeTentacleCount {
             let step = 2 * Float.pi / Float(a.fringeTentacleCount)
             let theta = (Float(i) + rng.next(in: -0.3...0.3)) * step
@@ -116,8 +116,8 @@ enum JellyfishMeshBuilder {
         return mesh
     }
 
-    /// Billboard quads for suspended particles.
-    /// p0 = (base position, size), p1 = (corner, seed, brightness).
+    /// 浮遊粒子用のビルボード四角形。
+    /// p0 = (基準位置, サイズ)、p1 = (角, シード, 明るさ)。
     static func particles(count: Int, extent: Float, rng: inout SeededRandom) -> MeshData {
         var mesh = MeshData()
         let corners: [SIMD2<Float>] = [[-1, -1], [1, -1], [-1, 1], [1, 1]]
@@ -136,7 +136,7 @@ enum JellyfishMeshBuilder {
     }
 }
 
-/// Deterministic SplitMix64 generator so the specimen looks the same on every launch.
+/// 起動のたびに標本が同じ見た目になるよう、決定的な SplitMix64 乱数生成器を使う。
 struct SeededRandom {
     private var state: UInt64
 
